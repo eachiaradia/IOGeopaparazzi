@@ -235,6 +235,10 @@ class ImportGpapAlgorithm(GeoAlgorithm):
       # get the rough list of section names (rough means like: {"sectionname":"my name")
       sectionNames = DBcursor.execute("SELECT DISTINCT substr(form,0,instr(form,',')) AS formName FROM notes")
       sectionNames = sectionNames.fetchall()
+      
+      if len(sectionNames)==0:
+        sectionNames = [('','')]
+        
       # for each section name make a new vector file
       for sn in sectionNames:
         baseFieldNames = ["_id","lon","lat","altim","ts","description","text","form","style","isdirty"]
@@ -243,30 +247,37 @@ class ImportGpapAlgorithm(GeoAlgorithm):
                                             QgsField("text", QVariant.String), \
                                             QgsField("form", QVariant.String),QgsField("style", QVariant.String), \
                                             QgsField("isdirty", QVariant.Int)]
-                                              
+        baseTable = Table(baseFieldNames)
+        
+        # get all records with form equal to note
         notes = DBcursor.execute("SELECT * FROM notes WHERE form LIKE '"+sn[0]+"%'")
         i = 1
-        for note in notes:
-          parser = JSONparser(note[7])
-          parser.parseKeyValue()
-          if i==1:
-            i += 1
-            # get section attribute key
-            key = parser.keys
-            baseFieldNames = baseFieldNames+key
-            baseTable = Table(baseFieldNames)
-            fields = parser.fields
-            baseTableFields = baseTableFields+fields
-          
-          vals = parser.values
-          note = self.convertToStringList(note)
-          baseTable.addRecordList(note+vals)
-          
-        cleanName = sn[0].split(":")
-        cleanName = cleanName[1].replace('"','')
-        if cleanName == '':
-          cleanName = 'notes'
+        cleanName = 'notes' # as default
         
+        for note in notes:
+          if sn[0] == '':
+            note = self.convertToStringList(note)
+            baseTable.addRecordList(note)
+          else:
+            # there are some more attributes to save ...
+            parser = JSONparser(note[7])
+            parser.parseKeyValue()
+            if i==1:
+              i += 1
+              # get section attribute key
+              key = parser.keys
+              baseFieldNames = baseFieldNames+key
+              baseTable = Table(baseFieldNames)
+              fields = parser.fields
+              baseTableFields = baseTableFields+fields
+              cleanName = sn[0].split(":")
+              cleanName = cleanName[1].replace('"','')
+            
+            vals = parser.values
+            note = self.convertToStringList(note)
+            baseTable.addRecordList(note+vals)
+            
+        print 'cleanName:',cleanName
         vl = self.exportPointToTempVector(baseTable, layName=cleanName, fields = baseTableFields)
         vl.setDisplayField('[% "text" %]')
         
