@@ -100,8 +100,13 @@ class JSONparser:
       }[type]
 
   def parseForm(self, form):
-    formname = form['formname']
-    formitems = form['formitems']
+    try:
+      formname = form['formname']
+      formitems = form['formitems']
+    except:
+      formname = self.parseFormItem(form)[3]
+      formitems = [form]
+      
     return formname, formitems
 
   def parseFormItem(self, formitem):
