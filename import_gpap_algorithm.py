@@ -356,7 +356,7 @@ class ImportGpapAlgorithm(GeoAlgorithm):
       
       # add Show Image Action
       #SIact = 'from PyQt4.QtCore import QUrl; from PyQt4.QtWebKit import QWebView;  myWV = QWebView(None); '
-      modPath = os.path.join(self.CURRENTPATH,'imageviewer','ImageViewer.py')
+      modPath = os.path.join(self.CURRENTPATH,'imageviewer','imageviewer.py')
       if platform.system() == 'Windows':
         modPath = modPath.replace("\\","/")
       
