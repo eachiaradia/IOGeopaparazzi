@@ -117,7 +117,7 @@ class ExportSpatialiteAlgorithm(GeoAlgorithm):
         ## MULTIPOLYGON is a collection of two or more POLYGONs.
         ## GEOMETRYCOLLECTION is an arbitrary collection containing any other kind of geometries.
         # to manage multi type shapefile
-        dict = {'POINTS': 'MULTIPOINT','LINESTRING': 'MULTILINESTRING', 'POLYGON': 'MULTIPOLYGON',\
+        dict = {'POINT': 'MULTIPOINT','LINESTRING': 'MULTILINESTRING', 'POLYGON': 'MULTIPOLYGON',\
         'MULTIPOINT': 'MULTIPOINT','MULTILINESTRING': 'MULTILINESTRING', 'MULTIPOLYGON': 'MULTIPOLYGON',\
         'GEOMETRYCOLLECTION': 'GEOMETRYCOLLECTION'}
         
