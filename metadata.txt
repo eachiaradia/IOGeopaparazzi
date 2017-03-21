@@ -26,9 +26,9 @@ repository=https://github.com/eachiaradia/IO_Geopaparazzi
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=vector, geopaparazzi, converter
+tags=vector, geopaparazzi, raster, tiles, sqlite, gps, android
 
-homepage=https://github.com/eachiaradia/IO_Geopaparazzi
+homepage=https://github.com/eachiaradia/IOGeopaparazzi/wiki
 category=Analysis
 icon=./icons/IOGeopaparazzi.png
 # experimental flag
