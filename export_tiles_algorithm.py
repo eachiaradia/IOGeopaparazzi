@@ -104,7 +104,7 @@ class ExportTilesAlgorithm(GeoAlgorithm):
         with some other properties.
         """
         # The name that the user will see in the toolbox
-        self.name = 'canvans layers to MBTiles'
+        self.name = 'canvas layers to MBTiles'
 
         # The branch of the toolbox under which the algorithm will appear
         self.group = 'Export to Geopaparazzi'
