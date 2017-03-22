@@ -53,10 +53,6 @@ import os.path as osp
 import sys
 import platform
 
-import PIL.Image
-import base64
-import cStringIO
-
 from pyspatialite import dbapi2 as db
 
 from qgis.core import *
