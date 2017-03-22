@@ -50,10 +50,6 @@ import os.path as osp
 import sys
 import platform
 
-import PIL.Image
-import base64
-import cStringIO
-
 from qgis.core import *
 from qgis.gui import *
 
