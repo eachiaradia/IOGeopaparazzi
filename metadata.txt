@@ -14,10 +14,10 @@ version=0.1
 author=Enrico A. Chiaradia
 email=enrico.chiaradia@yahoo.it
 
-about=A plugin to import data from geopaparazzi gpap file or prepare data to load on your Geopaparazzi project.
+about=The aim of this plugin is to share to the end-user, all it is necessary to communicate with Geopaparazzi. In particular, it offers a simplified GUI under the processing framework to prepare maps to import in Geopaparazzi as background or vector layer and to load the file created by Geopaparazzi directly in QGIS. Several plugins already make the same functions. Respect to ExportGeopaparazzi, this plugin offers some new tools to explore your geodata (e.g. manage notes with forms, view images). Respect to QTiles and QSpatialite, it offers a simplified interface under the Processing framework to produce mbtiles and sqlite files, ready to use in the Geopaparazzi without any other steps.
 
-tracker=https://github.com/eachiaradia/IO_Geopaparazzi
-repository=https://github.com/eachiaradia/IO_Geopaparazzi
+tracker=https://github.com/eachiaradia/IOGeopaparazzi
+repository=https://github.com/eachiaradia/IOGeopaparazzi
 # End of mandatory metadata
 
 # Recommended items:
