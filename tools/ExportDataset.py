@@ -34,10 +34,6 @@ import os.path as osp
 import sys
 import platform
 
-import PIL.Image
-import base64
-import cStringIO
-
 from qgis.core import *
 from qgis.gui import *
 
@@ -223,15 +219,6 @@ def ExportImages(DBcursor,currentPath,pathToDB):
     #print imgID, imgName
     
     for imgData in imgsData:
-      print imgData
-      #data1=base64.b64decode(imgData[1])
-      #blob = imgData[1]
-      #data1=blob.stream.read()
-      #file_like=cStringIO.StringIO(data1)
-      #img = PIL.Image.open(file_like)
-      #exif_data = img._getexif()
-      #print exif_data
-      
       with open(os.path.join(pathToImages,imgName), "wb") as output_file:
         output_file.write(imgData[1])
       with open(os.path.join(pathToThunbnails,imgName), "wb") as output_file:
