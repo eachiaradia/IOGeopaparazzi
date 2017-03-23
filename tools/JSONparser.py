@@ -95,6 +95,7 @@ class JSONparser:
         'connectedstringcombo':QVariant.String,
         'pictures':QVariant.Int,
         'sketch':QVariant.Int,
+        'map':QVariant.Int,
         'hidden':QVariant.String,
         'primary_key':QVariant.String,
       }[type]
