@@ -204,10 +204,6 @@ class ExportTilesAlgorithm(GeoAlgorithm):
     def updateText(self,txt):
       self.progress.setText(txt)
       
-    def on_exit(): # called when X in main window pressed
-      print 'exit button pressed'
-      self.workThread.set() # Tell threads to cleanup.
-      
     def closeEvent(self, event):
       # necessary to close the thread before it is finished
       self.workThread.stop()
