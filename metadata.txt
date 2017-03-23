@@ -10,7 +10,7 @@
 name=IO geopaparazzi
 qgisMinimumVersion=2.0
 description=A plugin to import/export geodata from/to geopaparazzi
-version=0.1.2
+version=0.1.3
 author=Enrico A. Chiaradia
 email=enrico.chiaradia@yahoo.it
 
@@ -24,7 +24,10 @@ repository=https://github.com/eachiaradia/IOGeopaparazzi
 
 # Uncomment the following line and add your changelog:
 # changelog=
-  0.1.2:  - PIL.Image, base64, cStringIO no more required
+  0.1.3:  - no binaries inside
+          - support for 'map' tag
+          - terminate export tiles algorithm if too long
+  0.1.2:  - PIL.Image, base64, cStringIO no more required (see Issue #1: PIL.Image install)
   0.1.1:  - tracker and code repository fixed
           - about text was modified to explain differences with similar plugin
   0.1:    - first commit
