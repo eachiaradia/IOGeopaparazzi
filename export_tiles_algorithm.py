@@ -41,6 +41,7 @@ from processing.tools.vector import VectorWriter
 
 from processing.core.GeoAlgorithmExecutionException import GeoAlgorithmExecutionException
 from processing.core.ProcessingLog import ProcessingLog
+from processing.gui.AlgorithmDialog import AlgorithmDialog
 
 import sqlite3 as sqlite
 import os
@@ -190,7 +191,8 @@ class ExportTilesAlgorithm(GeoAlgorithm):
           writeViewer,
           maxnumtiles
       )
-
+      # get the AlgorithmDialog dialog object and overload the closeEvent
+      AlgorithmDialog.closeEvent = self.closeEvent
       self.workThread.updateProgress.connect(self.updateProgress)
       self.workThread.updateText.connect(self.updateText)
       #self.workThread.start()
@@ -201,3 +203,12 @@ class ExportTilesAlgorithm(GeoAlgorithm):
       
     def updateText(self,txt):
       self.progress.setText(txt)
+      
+    def on_exit(): # called when X in main window pressed
+      print 'exit button pressed'
+      self.workThread.set() # Tell threads to cleanup.
+      
+    def closeEvent(self, event):
+      # necessary to close the thread before it is finished
+      self.workThread.stop()
+      
