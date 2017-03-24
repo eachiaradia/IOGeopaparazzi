@@ -156,6 +156,9 @@ class ExportSpatialiteAlgorithm(GeoAlgorithm):
             name = layer.name()
             source = layer.dataProvider().dataSourceUri()
             cod = layer.dataProvider().encoding()
+            if cod == 'System':
+              cod = sys.getdefaultencoding()
+              
             #progress.setText('coding %s' %(cod))
             fullname = source.split("|")[0]
             if fullname == path:
@@ -297,7 +300,8 @@ class ExportSpatialiteAlgorithm(GeoAlgorithm):
       newAttrs = []
       for a in attrs:
         try:
-          a = unicode(a).encode('utf-8').replace("'","").replace('"','')
+          a = unicode(a).encode(coding).replace("'","").replace('"','')
+          #a = unicode(a).encode('utf-8').replace("'","").replace('"','')
         except:
           # TODO: something of better to manage "strange" character
           #print a
