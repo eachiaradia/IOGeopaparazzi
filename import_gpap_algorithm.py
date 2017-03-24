@@ -244,17 +244,21 @@ class ImportGpapAlgorithm(GeoAlgorithm):
                                             QgsField("form", QVariant.String),QgsField("style", QVariant.String), \
                                             QgsField("isdirty", QVariant.Int)]
         baseTable = Table(baseFieldNames)
-        
-        # get all records with form equal to note
-        notes = DBcursor.execute("SELECT * FROM notes WHERE form LIKE '"+sn[0]+"%'")
-        i = 1
-        cleanName = 'notes' # as default
-        
-        for note in notes:
-          if sn[0] == '':
+                
+        if sn[0] == '':
+          # select all record that are empty
+          notes = DBcursor.execute("SELECT * FROM notes WHERE form LIKE ''")
+          cleanName = 'notes'
+          for note in notes:
             note = self.convertToStringList(note)
             baseTable.addRecordList(note)
-          else:
+        else:
+          # select all record that begins with sn[0]
+          notes = DBcursor.execute("SELECT * FROM notes WHERE form LIKE '"+sn[0]+"%'")
+          cleanName = sn[0].split(":")
+          cleanName = cleanName[1].replace('"','')
+          i = 1
+          for note in notes:
             # there are some more attributes to save ...
             parser = JSONparser(note[7])
             parser.parseKeyValue()
@@ -266,14 +270,11 @@ class ImportGpapAlgorithm(GeoAlgorithm):
               baseTable = Table(baseFieldNames)
               fields = parser.fields
               baseTableFields = baseTableFields+fields
-              cleanName = sn[0].split(":")
-              cleanName = cleanName[1].replace('"','')
-            
+              
             vals = parser.values
             note = self.convertToStringList(note)
             baseTable.addRecordList(note+vals)
             
-        print 'cleanName:',cleanName
         vl = self.exportPointToTempVector(baseTable, layName=cleanName, fields = baseTableFields)
         vl.setDisplayField('[% "text" %]')
         
@@ -281,7 +282,6 @@ class ImportGpapAlgorithm(GeoAlgorithm):
           vl.loadNamedStyle(os.path.join(self.CURRENTPATH,'styles','note_symb.qml'))
         # add to the TOC
         QgsMapLayerRegistry.instance().addMapLayer(vl)
-        
         
       
     def ExportNotes(self,DBcursor):
