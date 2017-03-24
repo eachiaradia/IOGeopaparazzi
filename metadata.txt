@@ -27,6 +27,7 @@ repository=https://github.com/eachiaradia/IOGeopaparazzi
   0.1.3:  - no binaries inside
           - support for 'map' tag
           - export tiles algorithm terminates if user presses exit button
+          - better handling of errors due to unrecognized characters
   0.1.2:  - PIL.Image, base64, cStringIO no more required (see Issue #1: PIL.Image install)
   0.1.1:  - tracker and code repository fixed
           - about text was modified to explain differences with similar plugin
