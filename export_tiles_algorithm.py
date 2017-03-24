@@ -70,6 +70,21 @@ import operator
 
 currentpath = osp.dirname(sys.modules[__name__].__file__)
 
+class ExportTilesAlgorithmDialog(AlgorithmDialog):
+  def __init__(self, alg):
+    AlgorithmDialog.__init__(self, alg)
+    
+  def closeEvent(self, evnt):
+    # necessary to close the thread before it is finished
+    if self.alg.workThread is not None:
+      self.alg.workThread.stop()
+    else:
+      pass
+    
+    # call original function
+    super(ExportTilesAlgorithmDialog, self).closeEvent(evnt)
+    
+
 class ExportTilesAlgorithm(GeoAlgorithm):
     """This is an example algorithm that takes a vector layer and
     creates a new one just with just those features of the input
@@ -117,10 +132,17 @@ class ExportTilesAlgorithm(GeoAlgorithm):
         # We add a vector layer as output
         self.addOutput(OutputFile(self.OUTFILE,self.tr('Output file'),'mbtiles'))
         
+        # the thread
+        self.workThread = None
+        
     def getIcon(self):
         """We return the default icon.
         """
         return QIcon(osp.join(self.CURRENTPATH,'icons','IOGeopaparazzi.png'))
+        
+    def getCustomParametersDialog(self):
+      self.customDialog = ExportTilesAlgorithmDialog(self)
+      return self.customDialog
         
     def processAlgorithm(self, progress):
       self.progress = progress
@@ -191,8 +213,6 @@ class ExportTilesAlgorithm(GeoAlgorithm):
           writeViewer,
           maxnumtiles
       )
-      # get the AlgorithmDialog dialog object and overload the closeEvent
-      AlgorithmDialog.closeEvent = self.closeEvent
       self.workThread.updateProgress.connect(self.updateProgress)
       self.workThread.updateText.connect(self.updateText)
       #self.workThread.start()
@@ -203,8 +223,3 @@ class ExportTilesAlgorithm(GeoAlgorithm):
       
     def updateText(self,txt):
       self.progress.setText(txt)
-      
-    def closeEvent(self, event):
-      # necessary to close the thread before it is finished
-      self.workThread.stop()
-      
