@@ -156,7 +156,7 @@ class ExportSpatialiteAlgorithm(GeoAlgorithm):
             name = layer.name()
             source = layer.dataProvider().dataSourceUri()
             cod = layer.dataProvider().encoding()
-            progress.setText('coding %s' %(cod))
+            #progress.setText('coding %s' %(cod))
             fullname = source.split("|")[0]
             if fullname == path:
               i +=1.0
@@ -204,13 +204,19 @@ class ExportSpatialiteAlgorithm(GeoAlgorithm):
                   attrs = self.get_feature_attr(feature,cod)
                   #print 'attrs:',attrs
                   geom = "CastToMulti(GeomFromGeoJSON('"+geom+"'))"
-                  #geom = geom.replace(vtype,forcedVtype)
-                  sql = "INSERT INTO "+name+" ("+vfields+", geom) "
-                  sql += "VALUES ("+attrs+", "+geom+")"
+                   #geom = geom.replace(vtype,forcedVtype)
+                  try:
+                    sql = "INSERT INTO "+name+" ("+vfields+", geom) "
+                    sql += "VALUES ("+attrs+", "+geom+")"
+                  except:
+                    progress.setText('Attribute error at %s, see Processing log for more information' %(str(f)))
+                    ProcessingLog.addToLog(ProcessingLog.LOG_INFO, 'Attribute error')
+                    ProcessingLog.addToLog(ProcessingLog.LOG_INFO, attrs)
+                  
                   try:
                     cur.execute(sql)
                   except:
-                    progress.setText('SQL error at %s' %(str(f)))
+                    progress.setText('SQL error at %s, see Processing log for more information' %(str(f)))
                     ProcessingLog.addToLog(ProcessingLog.LOG_INFO, 'SQL error')
                     ProcessingLog.addToLog(ProcessingLog.LOG_INFO, sql)
                   
