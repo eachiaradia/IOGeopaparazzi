@@ -82,7 +82,16 @@ class ExportTilesAlgorithmDialog(AlgorithmDialog):
       pass
     
     # call original function
-    super(ExportTilesAlgorithmDialog, self).closeEvent(evnt)
+    # on QGIS 1.8.4 I received this error:
+    # "C:/PROGRA~1/QGIS2~1.18/apps/qgis/./python/plugins\processing\gui\AlgorithmDialog.py", line 332, in closeEvent
+    # QgsMapLayerRegistry.instance().layerWasAdded.disconnect(self.mainWidget.layerAdded)
+    # TypeError: 'instancemethod' object is not connected
+    # So I added a try
+    try:
+        super(ExportTilesAlgorithmDialog, self).closeEvent(evnt)
+    except Exception as e:
+        ProcessingLog.addToLog(ProcessingLog.LOG_INFO, 'closeEvent error')
+        ProcessingLog.addToLog(ProcessingLog.LOG_INFO, str(e))
     
 
 class ExportTilesAlgorithm(GeoAlgorithm):
