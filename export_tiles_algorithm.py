@@ -133,7 +133,7 @@ class ExportTilesAlgorithm(GeoAlgorithm):
         # We add the input vector layer. It can have any kind of geometry
         # It is a mandatory (not optional) one, hence the False argument
         self.addParameter(ParameterExtent(self.EXTENT, self.tr('Set maximum extend')))
-        self.addParameter(ParameterNumber(self.MINZOOM, self.tr('Set minimum scale'), 0))
+        self.addParameter(ParameterNumber(self.MINZOOM, self.tr('Set minimum scale'), 16))
         self.addParameter(ParameterNumber(self.MAXZOOM, self.tr('Set maximum scale'),18))
         self.addParameter(ParameterNumber(self.TILEWIDTH, self.tr('Set tile dimension'),256))
         self.addParameter(ParameterNumber(self.MAXNUMTILES, self.tr('Max number of tiles to be generated'),10000))
