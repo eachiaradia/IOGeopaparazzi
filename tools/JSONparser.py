@@ -25,7 +25,7 @@ import json
 from qgis.core import *
 from qgis.gui import *
 
-from PyQt4.QtCore import QVariant  
+from PyQt5.QtCore import QVariant  
 
 class JSONparser: 
   """
@@ -178,9 +178,9 @@ if __name__ == '__main__':
   testTxt = '{"sectionname":"Museum","sectiondescription":"a rural village museum","forms":[{"formname":"General data","formitems":[{"value":"ul torc","type":"string","key":"name","islabel":"true","mandatory":"yes"},{"value":"piazza XI febbraio","type":"string","key":"street","mandatory":"no"},{"value":"1","type":"integer","key":"number","mandatory":"no"}]},{"formname":"Technical data","formitems":[{"value":"false","type":"boolean","key":"indoor","mandatory":"yes"},{"value":"<= 10","values":{"items":[{"item":""},{"item":"<= 10"},{"item":"10 < num. <= 20"},{"item":"> 20"}]},"type":"stringcombo","key":" number of  ","mandatory":"no"}]},{"formname":"Media","formitems":[{"value":"5","type":"pictures","key":"Images","mandatory":"no"}]}]}'
 
   parser = JSONparser(testTxt)
-  print parser.sectionName
+  print(parser.sectionName)
   parser.parseKeyValue()
-  print parser.keys
-  print parser.values
-  print parser.fields
+  print(parser.keys)
+  print(parser.values)
+  print(parser.fields)
     
