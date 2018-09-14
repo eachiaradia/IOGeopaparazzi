@@ -29,7 +29,7 @@ __copyright__ = '(C) 2017 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui,QtWidgets
 import operator
 import sys
 import os.path as osp
@@ -38,24 +38,24 @@ import os
 #setting the path variable for icon
 currentpath = osp.dirname(sys.modules[__name__].__file__)
 
-class ImageLabel(QtGui.QWidget):
+class ImageLabel(QtWidgets.QWidget):
   def __init__(self):
     super(ImageLabel, self).__init__()
     # add Qlabel
-    self.label = QtGui.QLabel()
+    self.label = QtWidgets.QLabel()
     self.label.setAlignment(QtCore.Qt.AlignCenter);
     # set size policy
-    sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+    sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
     sizePolicy.setHeightForWidth(True)
     self.label.setSizePolicy(sizePolicy)
     self.label.setBackgroundRole(QtGui.QPalette.Base)
     # add label to a HLayout
-    layout=QtGui.QHBoxLayout()
+    layout=QtWidgets.QHBoxLayout()
     layout.addWidget(self.label);
     self.setLayout(layout);
 
 
-class ImageViewer(QtGui.QMainWindow):
+class ImageViewer(QtWidgets.QMainWindow):
   def __init__(self):
     super(ImageViewer, self).__init__()
     
@@ -85,13 +85,13 @@ class ImageViewer(QtGui.QMainWindow):
     self.toolbar.addAction(self.save)
     
   def createActions(self):
-    self.rotR = QtGui.QAction(QtGui.QIcon(currentpath+"/rotation_R.png"),"Rotate &Right (90%)", self,
+    self.rotR = QtWidgets.QAction(QtGui.QIcon(currentpath+"/rotation_R.png"),"Rotate &Right (90%)", self,
             shortcut="Ctrl+R", enabled=True, triggered=self.rot90)
 
-    self.rotL = QtGui.QAction(QtGui.QIcon(currentpath+"/rotation_L.png"),"Rotate &Left (-90%)", self,
+    self.rotL = QtWidgets.QAction(QtGui.QIcon(currentpath+"/rotation_L.png"),"Rotate &Left (-90%)", self,
             shortcut="Ctrl+L", enabled=True, triggered=self.invrot90)
     
-    self.save = QtGui.QAction(QtGui.QIcon(currentpath+"/save.png"),"Save", self,
+    self.save = QtWidgets.QAction(QtGui.QIcon(currentpath+"/save.png"),"Save", self,
             shortcut="Ctrl+S", enabled=True, triggered=self.saveImage)
   
   def invrot90(self):
