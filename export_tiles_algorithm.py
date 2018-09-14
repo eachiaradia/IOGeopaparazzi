@@ -3,21 +3,21 @@
 """
 /***************************************************************************
  IOGeopaparazzi
-                                 A QGIS plugin
+								 A QGIS plugin
  A plugin to import/export geodata from/to geopaparazzi
-                              -------------------
-        begin                : 2017-02-27
-        copyright            : (C) 2017 by Enrico A. Chiaradia
-        email                : enrico.chiaradia@yahoo.it
+								-------------------
+		begin				: 2017-02-27
+		copyright			: (C) 2017 by Enrico A. Chiaradia
+		email				: enrico.chiaradia@yahoo.it
  ***************************************************************************/
 
 /***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
+ *																		 *
+ *	 This program is free software; you can redistribute it and/or modify	*
+ *	 it under the terms of the GNU General Public License as published by	*
+ *	 the Free Software Foundation; either version 2 of the License, or	 *
+ *	 (at your option) any later version.									 *
+ *																		 *
  ***************************************************************************/
 """
 
@@ -29,206 +29,261 @@ __copyright__ = '(C) 2017 by Enrico A. Chiaradia'
 
 __revision__ = '$Format:%H$'
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from qgis.core import QgsVectorFileWriter
 
-from processing.core.GeoAlgorithm import GeoAlgorithm
-from processing.core.parameters import ParameterFile,ParameterMultipleInput,ParameterExtent,ParameterNumber,ParameterCrs
-from processing.core.outputs import OutputVector,OutputDirectory,OutputFile
-from processing.tools import dataobjects, vector
-from processing.tools.vector import VectorWriter
+from PyQt5.QtCore import QCoreApplication,QVariant
+from PyQt5.QtGui import QIcon
 
-from processing.core.GeoAlgorithmExecutionException import GeoAlgorithmExecutionException
-from processing.core.ProcessingLog import ProcessingLog
-from processing.gui.AlgorithmDialog import AlgorithmDialog
+from qgis.core import (QgsProcessing,
+									QgsFeatureSink,
+									QgsProcessingAlgorithm,
+									QgsProcessingParameterFeatureSource,
+									QgsProcessingParameterFeatureSink,
+									QgsProcessingParameterFile,
+									QgsProcessingParameterExtent,
+									QgsProcessingParameterNumber,
+									QgsVectorLayer,
+									QgsCoordinateReferenceSystem,
+									QgsApplication,
+									QgsField,
+									QgsFields,
+									QgsPointXY,
+									QgsFeature,
+									QgsGeometry,
+									QgsProject,
+									QgsAction,
+									QgsWkbTypes)
+									
 
 import sqlite3 as sqlite
 import os
 import optparse
 from osgeo import ogr
 
-from tools.tilingthread import TilingThread
-
 import os.path as osp
 import sys
 import platform
 
-from pyspatialite import dbapi2 as db
 
-from qgis.core import *
-from qgis.gui import *
+class ExportTilesAlgorithm(QgsProcessingAlgorithm):
+	"""This is an example algorithm that takes a vector layer and
+	creates a new one just with just those features of the input
+	layer that are selected.
 
-from qgis.utils import iface
+	It is meant to be used as an example of how to create your own
+	algorithms and explain methods and variables used to do it. An
+	algorithm like this will be available in all elements, and there
+	is not need for additional work.
 
-from PyQt4.QtCore import QVariant  
-from PyQt4.QtGui import *
+	All Processing algorithms should extend the GeoAlgorithm class.
+	"""
 
-import locale
-import math
-import operator
+	# Constants used to refer to parameters and outputs. They will be
+	# used when calling the algorithm from another algorithm, or when
+	# calling from the QGIS console.
 
-currentpath = osp.dirname(sys.modules[__name__].__file__)
+	OUTFILE = 'OUTFILE'
+	EXTENT = 'EXTENT'
+	MINZOOM = 'MINZOOM'
+	MAXZOOM = 'MAXZOOM'
+	TILEWIDTH = 'TILEWIDTH'
+	MAXNUMTILES = 'MAXNUMTILES'
+	
+	CURRENTPATH = osp.dirname(sys.modules[__name__].__file__)
+	
+	
+	def initAlgorithm(self, config):
+		"""Here we define the inputs and output of the algorithm, along
+		with some other properties.
+		"""
 
-class ExportTilesAlgorithmDialog(AlgorithmDialog):
-  def __init__(self, alg):
-    AlgorithmDialog.__init__(self, alg)
-    
-  def closeEvent(self, evnt):
-    # necessary to close the thread before it is finished
-    if self.alg.workThread is not None:
-      self.alg.workThread.stop()
-    else:
-      pass
-    
-    # call original function
-    # on QGIS 1.8.4 I received this error:
-    # "C:/PROGRA~1/QGIS2~1.18/apps/qgis/./python/plugins\processing\gui\AlgorithmDialog.py", line 332, in closeEvent
-    # QgsMapLayerRegistry.instance().layerWasAdded.disconnect(self.mainWidget.layerAdded)
-    # TypeError: 'instancemethod' object is not connected
-    # So I added a try
-    try:
-        super(ExportTilesAlgorithmDialog, self).closeEvent(evnt)
-    except Exception as e:
-        ProcessingLog.addToLog(ProcessingLog.LOG_INFO, 'closeEvent error')
-        ProcessingLog.addToLog(ProcessingLog.LOG_INFO, str(e))
-    
+		# We add the input vector layer. It can have any kind of geometry
+		# It is a mandatory (not optional) one, hence the False argument
+		
+		#~ self.addParameter(
+			#~ QgsProcessingParameterExtent(
+				#~ self.EXTENT,
+				#~ self.tr('Set maximum extend')
+			#~ )
+		#~ )
+		
+		#~ self.addParameter(
+			#~ QgsProcessingParameterNumber (
+				#~ self.MINZOOM,
+				#~ self.tr("Set minimum scale"),
+				#~ defaultValue=16)
+		#~ )
+		
+		#~ self.addParameter(
+			#~ QgsProcessingParameterNumber (
+				#~ self.MAXZOOM,
+				#~ self.tr("Set minimum scale"),
+				#~ defaultValue=18)
+		#~ )
+		
+		#~ self.addParameter(
+			#~ QgsProcessingParameterNumber (
+				#~ self.TILEWIDTH,
+				#~ self.tr("Set tile dimension"),
+				#~ defaultValue=256)
+		#~ )
+		
+		#~ self.addParameter(
+			#~ QgsProcessingParameterNumber (
+				#~ self.MAXNUMTILES,
+				#~ self.tr("Max number of tiles to be generated"),
+				#~ defaultValue=10000)
+		#~ )
+		
+		#~ self.addParameter(
+			#~ QgsProcessingParameterFile(
+				#~ self.OUTFILE,
+				#~ self.tr("Output folder"),
+				#~ QgsProcessingParameterFile.Folder)
+		#~ )
+		
+		pass
+		
+	def name(self):
+		"""
+		Returns the algorithm name, used for identifying the algorithm. This
+		string should be fixed for the algorithm, and must not be localised.
+		The name should be unique within each provider. Names should contain
+		lowercase alphanumeric characters only and no spaces or other
+		formatting characters.
+		"""
+		return 'canvas_layers_to_mbtiles'
 
-class ExportTilesAlgorithm(GeoAlgorithm):
-    """This is an example algorithm that takes a vector layer and
-    creates a new one just with just those features of the input
-    layer that are selected.
+	def displayName(self):
+		"""
+		Returns the translated algorithm name, which should be used for any
+		user-visible display of the algorithm name.
+		"""
+		return self.tr('canvas layers to MBTiles')
 
-    It is meant to be used as an example of how to create your own
-    algorithms and explain methods and variables used to do it. An
-    algorithm like this will be available in all elements, and there
-    is not need for additional work.
+	def group(self):
+		"""
+		Returns the name of the group this algorithm belongs to. This string
+		should be localised.
+		"""
+		return self.tr('Export')
 
-    All Processing algorithms should extend the GeoAlgorithm class.
-    """
+	def groupId(self):
+		"""
+		Returns the unique ID of the group this algorithm belongs to. This
+		string should be fixed for the algorithm, and must not be localised.
+		The group id should be unique within each provider. Group id should
+		contain lowercase alphanumeric characters only and no spaces or other
+		formatting characters.
+		"""
+		return 'export_geopaparazzi'
 
-    # Constants used to refer to parameters and outputs. They will be
-    # used when calling the algorithm from another algorithm, or when
-    # calling from the QGIS console.
-    OUTFILE = 'OUTFILE'
-    EXTENT = 'EXTENT'
-    MINZOOM = 'MINZOOM'
-    MAXZOOM = 'MAXZOOM'
-    TILEWIDTH = 'TILEWIDTH'
-    MAXNUMTILES = 'MAXNUMTILES'
-    
-    CURRENTPATH = osp.dirname(sys.modules[__name__].__file__)
-    
-    
-    def defineCharacteristics(self):
-        """Here we define the inputs and output of the algorithm, along
-        with some other properties.
-        """
-        # The name that the user will see in the toolbox
-        self.name = 'canvas layers to MBTiles'
+	def tr(self, string):
+		return QCoreApplication.translate('Processing', string)
 
-        # The branch of the toolbox under which the algorithm will appear
-        self.group = 'Export to Geopaparazzi'
+	def createInstance(self):
+		return ImportGpapAlgorithm()
 
-        # We add the input vector layer. It can have any kind of geometry
-        # It is a mandatory (not optional) one, hence the False argument
-        self.addParameter(ParameterExtent(self.EXTENT, self.tr('Set maximum extend')))
-        self.addParameter(ParameterNumber(self.MINZOOM, self.tr('Set minimum scale'), default=16))
-        self.addParameter(ParameterNumber(self.MAXZOOM, self.tr('Set maximum scale'),default=18))
-        self.addParameter(ParameterNumber(self.TILEWIDTH, self.tr('Set tile dimension'),default=256))
-        self.addParameter(ParameterNumber(self.MAXNUMTILES, self.tr('Max number of tiles to be generated'),default=10000))
-        
-        # We add a vector layer as output
-        self.addOutput(OutputFile(self.OUTFILE,self.tr('Output file'),'mbtiles'))
-        
-        # the thread
-        self.workThread = None
-        
-    def getIcon(self):
-        """We return the default icon.
-        """
-        return QIcon(osp.join(self.CURRENTPATH,'icons','IOGeopaparazzi.png'))
-        
-    def getCustomParametersDialog(self):
-      self.customDialog = ExportTilesAlgorithmDialog(self)
-      return self.customDialog
-        
-    def processAlgorithm(self, progress):
-      self.progress = progress
-      extent = self.getParameterValue(self.EXTENT)
-      minzoom = self.getParameterValue(self.MINZOOM)
-      maxzoom = self.getParameterValue(self.MAXZOOM)
-      tilewidth = self.getParameterValue(self.TILEWIDTH)
-      crs = iface.mapCanvas().mapRenderer().destinationCrs().authid()
-      maxnumtiles = self.getParameterValue(self.MAXNUMTILES)
-      
-      outFile = self.getOutputValue(self.OUTFILE)
-      fileInfo = QFileInfo(outFile)
-      outPath = os.path.dirname(outFile)
-      
-      # others
-      tileheigh = tilewidth
-      transparency = 255
-      quality = 70
-      fformat = 'PNG'
-      antialiasing = False
-      TMSConvention = False
-      MBTilesCompression = False
-      WriteJson = False
-      WriteOverview = False
-      RenderOutsideTiles = True
-      writeMapurl = False
-      writeViewer = False
-      
-      if minzoom > maxzoom:
-          progress.setText(self.tr('Maximum zoom value is lower than minimum. Please correct this and try again.'))
-          return
-      
-      toks = extent.split(',')
-      extent = QgsRectangle(float(toks[0]),float(toks[2]),float(toks[1]),float(toks[3]))
-      extent = QgsCoordinateTransform(QgsCoordinateReferenceSystem(crs), QgsCoordinateReferenceSystem('EPSG:4326')).transform(extent)
-      arctanSinhPi = math.degrees(math.atan(math.sinh(math.pi)))
-      extent = extent.intersect(QgsRectangle(-180, -arctanSinhPi, 180, arctanSinhPi))
-      
-      layermap = iface.legendInterface().layers()
-      layers = []
-      # add only visible layers
-      for layer in layermap:
-        if iface.legendInterface().isLayerVisible(layer):
-          layers.append(layer)
-      
-      # reverse the list of layers
-      layers = layers[::-1]
-      
-      self.workThread = TilingThread(
-          layers,
-          extent,
-          minzoom,
-          maxzoom,
-          tilewidth,
-          tileheigh,
-          transparency,
-          quality,
-          fformat,
-          fileInfo,
-          fileInfo.fileName(),
-          antialiasing,
-          TMSConvention,
-          MBTilesCompression,
-          WriteJson,
-          WriteOverview,
-          RenderOutsideTiles,
-          writeMapurl,
-          writeViewer,
-          maxnumtiles
-      )
-      self.workThread.updateProgress.connect(self.updateProgress)
-      self.workThread.updateText.connect(self.updateText)
-      #self.workThread.start()
-      self.workThread.run()
-  
-    def updateProgress(self,val):
-      self.progress.setPercentage(val)
-      
-    def updateText(self,txt):
-      self.progress.setText(txt)
+		
+	def icon(self):
+		"""We return the default icon.
+		"""
+		return QIcon(osp.join(self.CURRENTPATH,'icons','IOGeopaparazzi.png'))
+
+
+	def resolveTemporaryOutputs(self):
+		"""Sets temporary outputs (output.value = None) with a
+		empty string.
+		"""
+		for out in self.outputs:
+			if not out.hidden and out.value is None:
+				out.value = ''
+				
+
+	def processAlgorithm(self, parameters, context, feedback):
+		"""Here is where the processing itself takes place."""
+		#~ extent = self.parameterAsExtent(self.EXTENT)
+		#~ minzoom = self.parameterAsDouble(self.MINZOOM)
+		#~ maxzoom = self.parameterAsDouble(self.MAXZOOM)
+		#~ tilewidth = self.parameterAsDouble(self.TILEWIDTH)
+		#~ maxnumtiles = self.parameterAsDouble(self.MAXNUMTILES)
+		#~ # crs = iface.mapCanvas().mapRenderer().destinationCrs().authid()
+		
+		
+		#~ outFile = self.parameterAsFile(self.OUTFILE)
+		#~ # fileInfo = QFileInfo(outFile)
+		#~ # outPath = os.path.dirname(outFile)
+		
+		#~ feedback.pushInfo(self.tr('extent is <%s>')%(extent)) 
+		#~ feedback.pushInfo(self.tr('minzoom is <%s>')%(minzoom))
+		#~ feedback.pushInfo(self.tr('maxzoom is <%s>')%(maxzoom))
+		#~ feedback.pushInfo(self.tr('tilewidth is <%s>')%(tilewidth))
+		#~ feedback.pushInfo(self.tr('maxnumtiles is <%s>')%(maxnumtiles))
+		
+		#~ # others
+		#~ tileheigh = tilewidth
+		#~ transparency = 255
+		#~ quality = 70
+		#~ fformat = 'PNG'
+		#~ antialiasing = False
+		#~ TMSConvention = False
+		#~ MBTilesCompression = False
+		#~ WriteJson = False
+		#~ WriteOverview = False
+		#~ RenderOutsideTiles = True
+		#~ writeMapurl = False
+		#~ writeViewer = False
+		
+		#~ if minzoom > maxzoom:
+			#~ progress.setText(self.tr('Maximum zoom value is lower than minimum. Please correct this and try again.'))
+			#~ return
+		
+		#~ toks = extent.split(',')
+		#~ extent = QgsRectangle(float(toks[0]),float(toks[2]),float(toks[1]),float(toks[3]))
+		#~ extent = QgsCoordinateTransform(QgsCoordinateReferenceSystem(crs), QgsCoordinateReferenceSystem('EPSG:4326')).transform(extent)
+		#~ arctanSinhPi = math.degrees(math.atan(math.sinh(math.pi)))
+		#~ extent = extent.intersect(QgsRectangle(-180, -arctanSinhPi, 180, arctanSinhPi))
+		
+		#~ layermap = iface.legendInterface().layers()
+		#~ layers = []
+		#~ # add only visible layers
+		#~ for layer in layermap:
+			#~ if iface.legendInterface().isLayerVisible(layer):
+				#~ layers.append(layer)
+		
+		#~ # reverse the list of layers
+		#~ layers = layers[::-1]
+		
+		#~ self.workThread = TilingThread(
+			#~ layers,
+			#~ extent,
+			#~ minzoom,
+			#~ maxzoom,
+			#~ tilewidth,
+			#~ tileheigh,
+			#~ transparency,
+			#~ quality,
+			#~ fformat,
+			#~ fileInfo,
+			#~ fileInfo.fileName(),
+			#~ antialiasing,
+			#~ TMSConvention,
+			#~ MBTilesCompression,
+			#~ WriteJson,
+			#~ WriteOverview,
+			#~ RenderOutsideTiles,
+			#~ writeMapurl,
+			#~ writeViewer,
+			#~ maxnumtiles
+		#~ )
+		#~ self.workThread.updateProgress.connect(self.updateProgress)
+		#~ self.workThread.updateText.connect(self.updateText)
+		#~ #self.workThread.start()
+		#~ self.workThread.run()
+		
+		pass
+	
+	def updateProgress(self,val):
+		self.progress.setPercentage(val)
+		
+	def updateText(self,txt):
+		self.progress.setText(txt)
