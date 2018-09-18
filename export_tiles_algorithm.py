@@ -30,7 +30,7 @@ __copyright__ = '(C) 2017 by Enrico A. Chiaradia'
 __revision__ = '$Format:%H$'
 
 
-from PyQt5.QtCore import QCoreApplication,QVariant
+from PyQt5.QtCore import QCoreApplication,QVariant,QFileInfo
 from PyQt5.QtGui import QIcon
 
 from qgis.core import (QgsProcessing,
@@ -38,6 +38,7 @@ from qgis.core import (QgsProcessing,
 									QgsProcessingAlgorithm,
 									QgsProcessingParameterFeatureSource,
 									QgsProcessingParameterFeatureSink,
+									QgsProcessingParameterFileDestination,
 									QgsProcessingParameterFile,
 									QgsProcessingParameterExtent,
 									QgsProcessingParameterNumber,
@@ -51,7 +52,9 @@ from qgis.core import (QgsProcessing,
 									QgsGeometry,
 									QgsProject,
 									QgsAction,
-									QgsWkbTypes)
+									QgsWkbTypes,
+									QgsCoordinateTransform,
+									QgsRectangle)
 									
 
 import sqlite3 as sqlite
@@ -62,6 +65,14 @@ from osgeo import ogr
 import os.path as osp
 import sys
 import platform
+
+import locale
+import math
+import operator
+
+from .tools.tilingthread import TilingThread
+
+from qgis.utils import iface
 
 
 class ExportTilesAlgorithm(QgsProcessingAlgorithm):
@@ -90,58 +101,59 @@ class ExportTilesAlgorithm(QgsProcessingAlgorithm):
 	
 	CURRENTPATH = osp.dirname(sys.modules[__name__].__file__)
 	
-	
+		
 	def initAlgorithm(self, config):
 		"""Here we define the inputs and output of the algorithm, along
 		with some other properties.
 		"""
-
 		# We add the input vector layer. It can have any kind of geometry
 		# It is a mandatory (not optional) one, hence the False argument
 		
-		#~ self.addParameter(
-			#~ QgsProcessingParameterExtent(
-				#~ self.EXTENT,
-				#~ self.tr('Set maximum extend')
-			#~ )
-		#~ )
+		self.addParameter(
+			QgsProcessingParameterExtent(
+				self.EXTENT,
+				self.tr('Set maximum extend')
+			)
+		)
 		
-		#~ self.addParameter(
-			#~ QgsProcessingParameterNumber (
-				#~ self.MINZOOM,
-				#~ self.tr("Set minimum scale"),
-				#~ defaultValue=16)
-		#~ )
+		self.addParameter(
+			QgsProcessingParameterNumber (
+				self.MINZOOM,
+				self.tr("Set minimum scale"),
+				defaultValue=16)
+		)
 		
-		#~ self.addParameter(
-			#~ QgsProcessingParameterNumber (
-				#~ self.MAXZOOM,
-				#~ self.tr("Set minimum scale"),
-				#~ defaultValue=18)
-		#~ )
+		self.addParameter(
+			QgsProcessingParameterNumber (
+				self.MAXZOOM,
+				self.tr("Set minimum scale"),
+				defaultValue=18)
+		)
 		
-		#~ self.addParameter(
-			#~ QgsProcessingParameterNumber (
-				#~ self.TILEWIDTH,
-				#~ self.tr("Set tile dimension"),
-				#~ defaultValue=256)
-		#~ )
+		self.addParameter(
+			QgsProcessingParameterNumber (
+				self.TILEWIDTH,
+				self.tr("Set tile dimension"),
+				defaultValue=256)
+		)
 		
-		#~ self.addParameter(
-			#~ QgsProcessingParameterNumber (
-				#~ self.MAXNUMTILES,
-				#~ self.tr("Max number of tiles to be generated"),
-				#~ defaultValue=10000)
-		#~ )
+		self.addParameter(
+			QgsProcessingParameterNumber (
+				self.MAXNUMTILES,
+				self.tr("Max number of tiles to be generated"),
+				defaultValue=10000)
+		)
 		
-		#~ self.addParameter(
-			#~ QgsProcessingParameterFile(
-				#~ self.OUTFILE,
-				#~ self.tr("Output folder"),
-				#~ QgsProcessingParameterFile.Folder)
-		#~ )
+		self.addParameter(
+			QgsProcessingParameterFileDestination(
+				self.OUTFILE,
+				self.tr("Output file"),
+				self.tr('MBTiles files (*.mbtiles)') )
+		)
 		
-		pass
+		# the thread
+		self.workThread = None
+		
 		
 	def name(self):
 		"""
@@ -181,7 +193,7 @@ class ExportTilesAlgorithm(QgsProcessingAlgorithm):
 		return QCoreApplication.translate('Processing', string)
 
 	def createInstance(self):
-		return ImportGpapAlgorithm()
+		return ExportTilesAlgorithm()
 
 		
 	def icon(self):
@@ -201,89 +213,86 @@ class ExportTilesAlgorithm(QgsProcessingAlgorithm):
 
 	def processAlgorithm(self, parameters, context, feedback):
 		"""Here is where the processing itself takes place."""
-		#~ extent = self.parameterAsExtent(self.EXTENT)
-		#~ minzoom = self.parameterAsDouble(self.MINZOOM)
-		#~ maxzoom = self.parameterAsDouble(self.MAXZOOM)
-		#~ tilewidth = self.parameterAsDouble(self.TILEWIDTH)
-		#~ maxnumtiles = self.parameterAsDouble(self.MAXNUMTILES)
-		#~ # crs = iface.mapCanvas().mapRenderer().destinationCrs().authid()
+		extent = self.parameterAsExtent(parameters, self.EXTENT, context)
+		minzoom = self.parameterAsDouble(parameters, self.MINZOOM, context)
+		maxzoom = self.parameterAsDouble(parameters, self.MAXZOOM, context)
+		tilewidth = self.parameterAsDouble(parameters, self.TILEWIDTH, context)
+		maxnumtiles = self.parameterAsDouble(parameters, self.MAXNUMTILES, context)
+		#crs = iface.mapCanvas().mapRenderer().destinationCrs().authid()
 		
 		
-		#~ outFile = self.parameterAsFile(self.OUTFILE)
-		#~ # fileInfo = QFileInfo(outFile)
-		#~ # outPath = os.path.dirname(outFile)
+		outFile = self.parameterAsFileOutput(parameters, self.OUTFILE, context)
+		fileInfo = QFileInfo(outFile)
+		# outPath = os.path.dirname(outFile)
 		
-		#~ feedback.pushInfo(self.tr('extent is <%s>')%(extent)) 
-		#~ feedback.pushInfo(self.tr('minzoom is <%s>')%(minzoom))
-		#~ feedback.pushInfo(self.tr('maxzoom is <%s>')%(maxzoom))
-		#~ feedback.pushInfo(self.tr('tilewidth is <%s>')%(tilewidth))
-		#~ feedback.pushInfo(self.tr('maxnumtiles is <%s>')%(maxnumtiles))
+		feedback.pushInfo(self.tr('extent is <%s>')%(extent)) 
+		feedback.pushInfo(self.tr('minzoom is <%s>')%(minzoom))
+		feedback.pushInfo(self.tr('maxzoom is <%s>')%(maxzoom))
+		feedback.pushInfo(self.tr('tilewidth is <%s>')%(tilewidth))
+		feedback.pushInfo(self.tr('maxnumtiles is <%s>')%(maxnumtiles))
 		
-		#~ # others
-		#~ tileheigh = tilewidth
-		#~ transparency = 255
-		#~ quality = 70
-		#~ fformat = 'PNG'
-		#~ antialiasing = False
-		#~ TMSConvention = False
-		#~ MBTilesCompression = False
-		#~ WriteJson = False
-		#~ WriteOverview = False
-		#~ RenderOutsideTiles = True
-		#~ writeMapurl = False
-		#~ writeViewer = False
+		# others
+		tileheigh = tilewidth
+		transparency = 255
+		quality = 70
+		fformat = 'PNG'
+		antialiasing = False
+		TMSConvention = False
+		MBTilesCompression = False
+		WriteJson = False
+		WriteOverview = False
+		RenderOutsideTiles = True
+		writeMapurl = False
+		writeViewer = False
 		
-		#~ if minzoom > maxzoom:
-			#~ progress.setText(self.tr('Maximum zoom value is lower than minimum. Please correct this and try again.'))
-			#~ return
+		if minzoom > maxzoom:
+			feedback.pushInfo(self.tr('Maximum zoom value is lower than minimum. Please correct this and try again.'))
+			return {}
 		
 		#~ toks = extent.split(',')
 		#~ extent = QgsRectangle(float(toks[0]),float(toks[2]),float(toks[1]),float(toks[3]))
-		#~ extent = QgsCoordinateTransform(QgsCoordinateReferenceSystem(crs), QgsCoordinateReferenceSystem('EPSG:4326')).transform(extent)
-		#~ arctanSinhPi = math.degrees(math.atan(math.sinh(math.pi)))
-		#~ extent = extent.intersect(QgsRectangle(-180, -arctanSinhPi, 180, arctanSinhPi))
+		extent = QgsCoordinateTransform(QgsProject.instance().crs(), QgsCoordinateReferenceSystem('EPSG:4326'),QgsProject.instance()).transform(extent)
+		arctanSinhPi = math.degrees(math.atan(math.sinh(math.pi)))
+		extent = extent.intersect(QgsRectangle(-180, -arctanSinhPi, 180, arctanSinhPi))
 		
-		#~ layermap = iface.legendInterface().layers()
-		#~ layers = []
-		#~ # add only visible layers
-		#~ for layer in layermap:
-			#~ if iface.legendInterface().isLayerVisible(layer):
-				#~ layers.append(layer)
+		layermap = iface.mapCanvas().layers()
+		layers = []
+		# add only visible layers
+		layTreeRoot = QgsProject.instance().layerTreeRoot()
+		for layer in layermap:
+			if layTreeRoot.findLayer(layer.id()).isVisible():
+				feedback.pushInfo(self.tr('Exporting layer %s.')%layer.name())
+				layers.append(layer)
 		
-		#~ # reverse the list of layers
-		#~ layers = layers[::-1]
+		# reverse the list of layers
+		layers = layers[::-1]
 		
-		#~ self.workThread = TilingThread(
-			#~ layers,
-			#~ extent,
-			#~ minzoom,
-			#~ maxzoom,
-			#~ tilewidth,
-			#~ tileheigh,
-			#~ transparency,
-			#~ quality,
-			#~ fformat,
-			#~ fileInfo,
-			#~ fileInfo.fileName(),
-			#~ antialiasing,
-			#~ TMSConvention,
-			#~ MBTilesCompression,
-			#~ WriteJson,
-			#~ WriteOverview,
-			#~ RenderOutsideTiles,
-			#~ writeMapurl,
-			#~ writeViewer,
-			#~ maxnumtiles
-		#~ )
+		self.workThread = TilingThread(
+			layers,
+			extent,
+			minzoom,
+			maxzoom,
+			tilewidth,
+			tileheigh,
+			transparency,
+			quality,
+			fformat,
+			fileInfo,
+			fileInfo.fileName(),
+			antialiasing,
+			TMSConvention,
+			MBTilesCompression,
+			WriteJson,
+			WriteOverview,
+			RenderOutsideTiles,
+			writeMapurl,
+			writeViewer,
+			maxnumtiles
+		)
 		#~ self.workThread.updateProgress.connect(self.updateProgress)
 		#~ self.workThread.updateText.connect(self.updateText)
 		#~ #self.workThread.start()
-		#~ self.workThread.run()
+		self.workThread.run()
 		
-		pass
+		return {}
 	
-	def updateProgress(self,val):
-		self.progress.setPercentage(val)
-		
-	def updateText(self,txt):
-		self.progress.setText(txt)
