@@ -38,7 +38,7 @@ def mbtiles_connect(mbtiles_file):
     try:
         con = sqlite3.connect(mbtiles_file, check_same_thread=False)
         return con
-    except Exception, e:
+    except Exception as e:
         logger.error("Could not connect to database")
         logger.exception(e)
         sys.exit(1)
@@ -65,8 +65,8 @@ def compression_prepare(cur, con):
 def optimize_database(cur):
     logger.debug('analyzing db')
     cur.execute("""ANALYZE;""")
-    logger.debug('cleaning db')
-    cur.execute("""VACUUM;""")
+    #~ logger.debug('cleaning db')
+    #~ cur.execute("""VACUUM;""")
 
 def compression_do(cur, con, chunk):
     overlapping = 0
@@ -130,7 +130,7 @@ def compression_finalize(cur):
     cur.execute("""
           CREATE UNIQUE INDEX images_id on images
             (tile_id);""")
-    cur.execute("""vacuum;""")
+    #~ cur.execute("""vacuum;""")
     cur.execute("""analyze;""")
 
 def getDirs(path):
@@ -245,7 +245,7 @@ def mbtiles_to_disk(mbtiles_file, directory_path, **kwargs):
         y = t[2]
         if kwargs.get('scheme') == 'xyz':
             y = flip_y(z,y)
-            print 'flipping'
+            print('flipping')
             tile_dir = os.path.join(base_path, str(z), str(x))
         elif kwargs.get('scheme') == 'wms':
             tile_dir = os.path.join(base_path,

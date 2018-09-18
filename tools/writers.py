@@ -29,10 +29,10 @@ import sqlite3
 import zipfile
 import json
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 
-from mbutils import *
+from .mbutils import *
 
 
 class DirectoryWriter:

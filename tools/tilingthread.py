@@ -28,12 +28,12 @@ import time
 import codecs
 import json
 from string import Template
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
-from tile import Tile
-from writers import *
-import resources_rc
+from .tile import Tile
+from .writers import *
+#import resources_rc
 import os
 
 #class TilingThread():
@@ -93,19 +93,20 @@ class TilingThread(QThread):
         myBlue = QgsProject.instance().readNumEntry('Gui', '/CanvasColorBluePart', 255)[0]
         self.color = QColor(myRed, myGreen, myBlue, transp)
         image = QImage(width, height, QImage.Format_ARGB32_Premultiplied)
-        self.projector = QgsCoordinateTransform(QgsCoordinateReferenceSystem('EPSG:4326'), QgsCoordinateReferenceSystem('EPSG:3395'))
+        self.projector = QgsCoordinateTransform(QgsCoordinateReferenceSystem('EPSG:4326'), QgsCoordinateReferenceSystem('EPSG:3395'),QgsProject.instance())
         self.scaleCalc = QgsScaleCalculator()
         self.scaleCalc.setDpi(image.logicalDpiX())
         self.scaleCalc.setMapUnits(QgsCoordinateReferenceSystem('EPSG:3395').mapUnits())
         self.settings = QgsMapSettings()
         self.settings.setBackgroundColor(self.color)
-        self.settings.setCrsTransformEnabled(True)
+        #self.settings.setCrsTransformEnabled(True) # always true in QGIS 3
         self.settings.setOutputDpi(image.logicalDpiX())
         self.settings.setOutputImageFormat(QImage.Format_ARGB32_Premultiplied)
         self.settings.setDestinationCrs(QgsCoordinateReferenceSystem('EPSG:3395'))
         self.settings.setOutputSize(image.size())
-        self.settings.setLayers(self.layersId)
-        self.settings.setMapUnits(QgsCoordinateReferenceSystem('EPSG:3395').mapUnits())
+        #self.settings.setLayers(self.layersId)
+        self.settings.setLayers(self.layers)
+        #self.settings.setMapUnits(QgsCoordinateReferenceSystem('EPSG:3395').mapUnits())
         if self.antialias:
             self.settings.setFlag(QgsMapSettings.Antialiasing, True)
         else:
@@ -281,8 +282,8 @@ class TilingThread(QThread):
             else:
                 self.tiles.append(tile)
         if tile.z < self.maxZoom:
-            for x in xrange(2 * tile.x, 2 * tile.x + 2, 1):
-                for y in xrange(2 * tile.y, 2 * tile.y + 2, 1):
+            for x in range(2 * tile.x, 2 * tile.x + 2, 1):
+                for y in range(2 * tile.y, 2 * tile.y + 2, 1):
                     self.mutex.lock()
                     s = self.stopMe
                     self.mutex.unlock()
