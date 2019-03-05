@@ -36,7 +36,7 @@ import inspect
 
 from qgis.core import QgsProcessingAlgorithm, QgsApplication
 from .io_geopaparazzi_provider import IOGeopaparazziProvider
-from PyQt5.QtCore import QSettings
+from PyQt5.QtCore import QSettings, QTranslator, QCoreApplication, qVersion
 
 cmd_folder = os.path.split(inspect.getfile(inspect.currentframe()))[0]
 

@@ -63,7 +63,8 @@ class TilingThread(QThread):
         if rootDir:
             self.rootDir = rootDir
         else:
-            self.rootDir = 'tileset_%s' % unicode(time.time()).split('.')[0]
+            # self.rootDir = 'tileset_%s' % unicode(time.time()).split('.')[0]
+            self.rootDir = "tileset_{}".format(str(time.time()).split('.')[0])
         self.antialias = antialiasing
         self.tmsConvention = tmsConvention
         self.mbtilesCompression = mbtilesCompression
@@ -250,7 +251,7 @@ class TilingThread(QThread):
     def writeLeafletViewer(self):
         templateFile = QFile(':/resources/viewer.html')
         if templateFile.open(QIODevice.ReadOnly | QIODevice.Text):
-            viewer = MyTemplate(unicode(templateFile.readAll()))
+            viewer = MyTemplate(str(templateFile.readAll()))
 
             tilesDir = '%s/%s' % (self.output.absoluteFilePath(), self.rootDir)
             useTMS = 'true' if self.tmsConvention else 'false'

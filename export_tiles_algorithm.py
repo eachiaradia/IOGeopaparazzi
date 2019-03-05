@@ -214,10 +214,10 @@ class ExportTilesAlgorithm(QgsProcessingAlgorithm):
 	def processAlgorithm(self, parameters, context, feedback):
 		"""Here is where the processing itself takes place."""
 		extent = self.parameterAsExtent(parameters, self.EXTENT, context)
-		minzoom = self.parameterAsDouble(parameters, self.MINZOOM, context)
-		maxzoom = self.parameterAsDouble(parameters, self.MAXZOOM, context)
-		tilewidth = self.parameterAsDouble(parameters, self.TILEWIDTH, context)
-		maxnumtiles = self.parameterAsDouble(parameters, self.MAXNUMTILES, context)
+		minzoom = self.parameterAsInt(parameters, self.MINZOOM, context)
+		maxzoom = self.parameterAsInt(parameters, self.MAXZOOM, context)
+		tilewidth = self.parameterAsInt(parameters, self.TILEWIDTH, context)
+		maxnumtiles = self.parameterAsInt(parameters, self.MAXNUMTILES, context)
 		#crs = iface.mapCanvas().mapRenderer().destinationCrs().authid()
 		
 		
@@ -266,7 +266,25 @@ class ExportTilesAlgorithm(QgsProcessingAlgorithm):
 		
 		# reverse the list of layers
 		layers = layers[::-1]
-		
+		print(layers)
+
+		print('-------------')
+		print(
+			'layers: ',layers,
+			'extent: ',extent,
+			'minzoom:',minzoom,
+			'fileinfo:',fileInfo.fileName(),
+			antialiasing,
+			TMSConvention,
+			MBTilesCompression,
+			WriteJson,
+			WriteOverview,
+			RenderOutsideTiles,
+			writeMapurl,
+			writeViewer,
+			maxnumtiles
+		)
+
 		self.workThread = TilingThread(
 			layers,
 			extent,
