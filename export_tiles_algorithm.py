@@ -101,6 +101,8 @@ class ExportTilesAlgorithm(QgsProcessingAlgorithm):
 	
 	CURRENTPATH = osp.dirname(sys.modules[__name__].__file__)
 	
+	FEEDBACK = None
+	
 		
 	def initAlgorithm(self, config):
 		"""Here we define the inputs and output of the algorithm, along
@@ -209,9 +211,16 @@ class ExportTilesAlgorithm(QgsProcessingAlgorithm):
 		for out in self.outputs:
 			if not out.hidden and out.value is None:
 				out.value = ''
-				
+	
+	def updateProgress(self,perc):
+		self.FEEDBACK.setProgress(int(perc))
+		
+	def updateText(self,text):
+		self.FEEDBACK.pushInfo(text)
 
 	def processAlgorithm(self, parameters, context, feedback):
+		self.FEEDBACK = feedback
+		
 		"""Here is where the processing itself takes place."""
 		extent = self.parameterAsExtent(parameters, self.EXTENT, context)
 		minzoom = self.parameterAsInt(parameters, self.MINZOOM, context)
@@ -219,8 +228,7 @@ class ExportTilesAlgorithm(QgsProcessingAlgorithm):
 		tilewidth = self.parameterAsInt(parameters, self.TILEWIDTH, context)
 		maxnumtiles = self.parameterAsInt(parameters, self.MAXNUMTILES, context)
 		#crs = iface.mapCanvas().mapRenderer().destinationCrs().authid()
-		
-		
+				
 		outFile = self.parameterAsFileOutput(parameters, self.OUTFILE, context)
 		fileInfo = QFileInfo(outFile)
 		# outPath = os.path.dirname(outFile)
@@ -245,6 +253,23 @@ class ExportTilesAlgorithm(QgsProcessingAlgorithm):
 		writeMapurl = False
 		writeViewer = False
 		
+		feedback.pushInfo(self.tr('---------------'))
+		feedback.pushInfo(self.tr('Other settings:')) 
+		feedback.pushInfo(self.tr('tileheigh is <%s>')%(tileheigh))
+		feedback.pushInfo(self.tr('tilewidth is <%s>')%(tilewidth))
+		feedback.pushInfo(self.tr('transparency is <%s>')%(transparency)) 
+		feedback.pushInfo(self.tr('quality is <%s>')%(quality))
+		feedback.pushInfo(self.tr('fformat is <%s>')%(fformat))
+		feedback.pushInfo(self.tr('antialiasing is <%s>')%(antialiasing)) 
+		feedback.pushInfo(self.tr('TMSConvention is <%s>')%(TMSConvention)) 
+		feedback.pushInfo(self.tr('MBTilesCompression is <%s>')%(MBTilesCompression)) 
+		feedback.pushInfo(self.tr('WriteJson is <%s>')%(WriteJson)) 
+		feedback.pushInfo(self.tr('WriteOverview is <%s>')%(WriteOverview)) 
+		feedback.pushInfo(self.tr('RenderOutsideTiles is <%s>')%(RenderOutsideTiles)) 
+		feedback.pushInfo(self.tr('writeMapurl is <%s>')%(writeMapurl)) 
+		feedback.pushInfo(self.tr('writeViewer is <%s>')%(writeViewer))
+		feedback.pushInfo(self.tr('---------------'))
+				
 		if minzoom > maxzoom:
 			feedback.pushInfo(self.tr('Maximum zoom value is lower than minimum. Please correct this and try again.'))
 			return {}
@@ -264,27 +289,7 @@ class ExportTilesAlgorithm(QgsProcessingAlgorithm):
 				feedback.pushInfo(self.tr('Exporting layer %s.')%layer.name())
 				layers.append(layer)
 		
-		# reverse the list of layers
-		layers = layers[::-1]
-		print(layers)
-
-		print('-------------')
-		print(
-			'layers: ',layers,
-			'extent: ',extent,
-			'minzoom:',minzoom,
-			'fileinfo:',fileInfo.fileName(),
-			antialiasing,
-			TMSConvention,
-			MBTilesCompression,
-			WriteJson,
-			WriteOverview,
-			RenderOutsideTiles,
-			writeMapurl,
-			writeViewer,
-			maxnumtiles
-		)
-
+		
 		self.workThread = TilingThread(
 			layers,
 			extent,
@@ -307,8 +312,8 @@ class ExportTilesAlgorithm(QgsProcessingAlgorithm):
 			writeViewer,
 			maxnumtiles
 		)
-		#~ self.workThread.updateProgress.connect(self.updateProgress)
-		#~ self.workThread.updateText.connect(self.updateText)
+		self.workThread.updateProgress.connect(self.updateProgress)
+		self.workThread.updateText.connect(self.updateText)
 		#~ #self.workThread.start()
 		self.workThread.run()
 		
