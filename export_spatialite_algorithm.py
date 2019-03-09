@@ -246,11 +246,11 @@ class ExportSpatialiteAlgorithm(QgsProcessingAlgorithm):
 			# something like: "crs":{"type":"name","properties":{"name":"EPSG:4326"}}
 			vcrsAuthid = '"crs":{"type":"name","properties":{"name":"%s"}}' %(layer.crs().authid())
 			# create a new table
-			sql = 'CREATE TABLE '+name+' (' + vfields + ')'
+			sql = 'CREATE TABLE "'+name+'" (' + vfields + ')'
 			cur.execute(sql)
 			# creating a Geometry column
-			sql = "SELECT AddGeometryColumn('"+name+"',"
-			sql += "'geom', "+str(vcrs)+", '"+forcedVtype+"', 'XY')"
+			sql = 'SELECT AddGeometryColumn("'+name+'",'
+			sql += '"geom", '+str(vcrs)+', "'+forcedVtype+'", "XY")'
 			try:
 				cur.execute(sql)
 			except:
@@ -277,8 +277,8 @@ class ExportSpatialiteAlgorithm(QgsProcessingAlgorithm):
 				attrs = self.get_feature_attr(feature,cod)
 				geom = "CastToMulti(GeomFromGeoJSON('"+geom+"'))"
 				try:
-					sql = "INSERT INTO "+name+" ("+vfields+", geom) "
-					sql += "VALUES ("+attrs+", "+geom+")"
+					sql = 'INSERT INTO "'+name+'" ('+vfields+', geom) '
+					sql += 'VALUES ('+attrs+', '+geom+')'
 				except:
 					feedback.pushInfo(self.tr('Attribute error at %s, attributes: %s') %(str(f),attrs))
 				
@@ -289,7 +289,7 @@ class ExportSpatialiteAlgorithm(QgsProcessingAlgorithm):
 			
 		conn.commit()
 		# force spatial index
-		cur.execute("SELECT CreateSpatialIndex('"+name+"', 'geom')")
+		cur.execute('SELECT CreateSpatialIndex("'+name+'", "geom")')
 		# Update statistics
 		cur.execute('SELECT UpdateLayerStatistics()')
 		
