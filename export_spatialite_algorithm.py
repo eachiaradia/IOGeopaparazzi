@@ -287,9 +287,10 @@ class ExportSpatialiteAlgorithm(QgsProcessingAlgorithm):
 				except:
 					feedback.pushInfo(self.tr('SQL error at %s, sql: %s') %(str(f),sql))
 			
-		conn.commit()
-		# force spatial index
-		cur.execute('SELECT CreateSpatialIndex("'+name+'", "geom")')
+			conn.commit()
+			# force spatial index
+			cur.execute('SELECT CreateSpatialIndex("'+name+'", "geom")')
+
 		# Update statistics
 		cur.execute('SELECT UpdateLayerStatistics()')
 		
