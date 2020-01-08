@@ -351,8 +351,10 @@ class ExportSpatialiteAlgorithm(QgsProcessingAlgorithm):
 		iter = layer.getFeatures()
 		feature = next(iter)
 		geom = feature.geometry().asJson()
+		# remove all spaces
+		geom=geom.replace(" ","")
 		# it's like: '{"type": "LineString","crs":{"type":'
-		geomType = self.find_between(geom, '{"type": "', '", "' )
+		geomType = self.find_between(geom, '{"type":"', '","' )
 		return geomType
 		
 	def find_between(self, s, first, last ):
